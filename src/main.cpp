@@ -19,8 +19,9 @@ int lastButtonState = LOW;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
 // MAC Address of ESP32 Receiver
-uint8_t address[6] = {0xcc, 0xdb, 0xa7, 0x3e, 0x01, 0x28};
-// uint8_t addresstwo[6] = {0xcc, 0xdb, 0xa7, 0x3e, 0xb7, 0xf8};
+// uint8_t address[6] = {0xcc, 0xdb, 0xa7, 0x3e, 0x01, 0x28};
+//uint8_t address[6] = {0xcc, 0xdb, 0xa7, 0x3f, 0x53, 0x60};
+uint8_t address[6] = {0xcc, 0xdb, 0xa7, 0x3e, 0xb7, 0xf8};
 
 typedef struct test_struct
 {
@@ -91,170 +92,65 @@ void showNewData()
     String trimmedCopy = String(receivedChars);
 
     trimmed.trim();
-    //Serial.println("Setting: " + String(digitalRead(MODEMT1_PIN)) + String(digitalRead(MODEMT2_PIN)) + String(digitalRead(MODEAND_PIN)));
-    if (digitalRead(MODEMT1_PIN) == LOW)
+    // Serial.println("Setting: " + String(digitalRead(MODEMT1_PIN)) + String(digitalRead(MODEMT2_PIN)) + String(digitalRead(MODEAND_PIN)));
+    if (trimmed.indexOf("C308720092") != -1)
     {
-      if (trimmed.indexOf("C308720092") != -1)
-      {
-        newData = false;
-        return;
-      }
-      //Serial.println(trimmed.length());
-      if (trimmed.length() != 16)
-      {
-        newData = false;
-        return;
-      }
+      newData = false;
+      return;
+    }
 
+    int len = trimmed.length();
+
+    if (len == 16 && (trimmed.startsWith("S S") || trimmed.startsWith("S D")))
+    {
+      // MODEMT1 pattern
       if (trimmed.startsWith("S S"))
       {
         trimmed.replace("S S", " * ");
       }
-      else if (trimmed.startsWith("S D"))
+      else
       {
         trimmed.replace("S D", "   ");
       }
-      else
+      int stable = 1;
+      if (trimmedCopy.startsWith("S S"))
       {
-        newData = false;
-        return;
+        trimmedCopy.replace("S S", "");
+        stable = 1;
+      }
+      if (trimmedCopy.startsWith("S D"))
+      {
+        trimmedCopy.replace("S D", "");
+        stable = 0;
+      }
+      if (digitalRead(BUTTON_PIN) == HIGH && digitalRead(MODEAND_PIN) == HIGH)
+      {
+        trimmedCopy.replace("g", "");
+        trimmedCopy.trim();
+        float tlsFloat = trimmedCopy.toFloat();
+        tlsFloat = tlsFloat / 37.7994;
+        String tlsString = String(tlsFloat, 3);
+        tlsString = tlsString + " t";
+        tlsString = padLeft(tlsString, ' ', 16);
+        if (stable)
+        {
+          tlsString[1] = '*';
+          Serial.println(tlsString);
+        }
+        trimmed = tlsString;
       }
     }
-    else if (digitalRead(MODEMT2_PIN) == LOW)
+    else if (len == 14 && (trimmed.startsWith("SD") || trimmed.startsWith("S")))
     {
-      if (trimmed.indexOf("C308720092") != -1)
-      {
-        newData = false;
-        return;
-      }
-      Serial.println(trimmed.length());
-      if (trimmed.length() != 14)
-      {
-        newData = false;
-        return;
-      }
-
+      // MODEMT2 pattern
       if (trimmed.startsWith("SD"))
       {
         trimmed.replace("SD", "    ");
       }
-      else if (trimmed.startsWith("S"))
+      else
       {
         trimmed.replace("S", " * ");
       }
-      else
-      {
-        newData = false;
-        return;
-      }
-    }
-    else if (digitalRead(MODEAND_PIN) == LOW)
-    {
-      Serial.println(trimmed.length());
-      if (trimmed.length() != 15)
-      {
-        newData = false;
-        return;
-      }
-
-      if (trimmed.startsWith("ST,+0000"))
-      {
-        trimmed.replace("ST,+0000", " *        ");
-      }
-      else if (trimmed.startsWith("ST,+000"))
-      {
-        trimmed.replace("ST,+000", " *       ");
-      }
-      else if (trimmed.startsWith("ST,+00"))
-      {
-        trimmed.replace("ST,+00", " *      ");
-      }
-      else if (trimmed.startsWith("ST,+0"))
-      {
-        trimmed.replace("ST,+0", " *     ");
-      }
-      else if (trimmed.startsWith("ST,+"))
-      {
-        trimmed.replace("ST,+", " *    ");
-      }
-      else if (trimmed.startsWith("US,+0000"))
-      {
-        trimmed.replace("US,+0000", "          ");
-      }
-      else if (trimmed.startsWith("US,+000"))
-      {
-        trimmed.replace("US,+000", "         ");
-      }
-      else if (trimmed.startsWith("US,+00"))
-      {
-        trimmed.replace("US,+00", "        ");
-      }
-      else if (trimmed.startsWith("US,+0"))
-      {
-        trimmed.replace("US,+0", "       ");
-      }
-      else if (trimmed.startsWith("US,+"))
-      {
-        trimmed.replace("US,+", "      ");
-      }
-      else if (trimmed.startsWith("ST,-0000"))
-      {
-        trimmed.replace("ST,-0000", " *       -");
-      }
-      else if (trimmed.startsWith("ST,-000"))
-      {
-        trimmed.replace("ST,-000", " *      -");
-      }
-      else if (trimmed.startsWith("ST,-00"))
-      {
-        trimmed.replace("ST,-00", " *     -");
-      }
-      else if (trimmed.startsWith("ST,-0"))
-      {
-        trimmed.replace("ST,-0", " *    -");
-      }
-      else if (trimmed.startsWith("ST,-"))
-      {
-        trimmed.replace("ST,-", " *   -");
-      }
-      else if (trimmed.startsWith("US,-0000"))
-      {
-        trimmed.replace("US,-0000", "         -");
-      }
-      else if (trimmed.startsWith("US,-000"))
-      {
-        trimmed.replace("US,-000", "        -");
-      }
-      else if (trimmed.startsWith("US,-00"))
-      {
-        trimmed.replace("US,-00", "       -");
-      }
-      else if (trimmed.startsWith("US,-0"))
-      {
-        trimmed.replace("US,-0", "      -");
-      }
-      else if (trimmed.startsWith("US,-"))
-      {
-        trimmed.replace("US,-", "     -");
-      }
-      else
-      {
-        newData = false;
-        return;
-      }
-
-      if (trimmed.endsWith("  g"))
-      {
-        trimmed.replace("  g", " g");
-      }
-      trimmedCopy = trimmed;
-    }
-
-    // Serial.println(digitalRead(BUTTON_PIN));
-    //  convert to tael singapore (tls) if button is pressed
-
-    if (digitalRead(BUTTON_PIN) == HIGH && digitalRead(MODEAND_PIN) == HIGH)
-    {
       int stable = 1;
       if (trimmedCopy.startsWith("S S"))
       {
@@ -280,31 +176,79 @@ void showNewData()
       }
       trimmed = tlsString;
     }
-    else if (digitalRead(BUTTON_PIN) == HIGH && digitalRead(MODEAND_PIN) == LOW)
+    else if (len == 15 && (trimmed.startsWith("ST,+") || trimmed.startsWith("US,+") ||
+                           trimmed.startsWith("ST,-") || trimmed.startsWith("US,-")))
     {
-      int stable = 1;
-      if (trimmedCopy.startsWith(" *"))
+      // MODEAND pattern
+
+      bool isStable = trimmed.startsWith("ST,");
+      bool isNegative = trimmed.charAt(3) == '-';
+
+      int prefixLen = isNegative ? 6 : 5; // ST,- vs ST,+
+
+      // Count zeros
+      int count = 0;
+      while (trimmed.charAt(prefixLen + count) == '0')
       {
-        stable = 1;
-        trimmedCopy.replace(" *","");
-      }else{
-        stable = 0;
+        count++;
       }
 
-      trimmedCopy.replace("g", "");
-      trimmedCopy.trim();
-      float tlsFloat = trimmedCopy.toFloat();
-      tlsFloat = tlsFloat / 37.7994;
-      String tlsString = String(tlsFloat, 3);
-      tlsString = tlsString + " t";
-      tlsString = padLeft(tlsString, ' ', 16);
-      if (stable)
+      // Extract the number part after leading zeros
+      String numberPart = trimmed.substring(prefixLen + count);
+      numberPart.replace("  g", " g");
+      if (numberPart.startsWith("."))
       {
-        tlsString[1] = '*';
-        Serial.println(tlsString);
+        numberPart = "0" + numberPart;
       }
-      trimmed = tlsString;
+      // Build prefix
+      String prefix = isStable ? " *" : "  ";
+
+      // Calculate how many spaces go between prefix and number
+      int spaceCount = 16 - prefix.length() - numberPart.length();
+      for (int i = 0; i < spaceCount; i++)
+      {
+        prefix += ' ';
+      }
+
+      // Final result
+      trimmed = prefix + numberPart;
+
+      trimmedCopy = trimmed;
+      Serial.println(trimmedCopy);
+      if (digitalRead(BUTTON_PIN) == HIGH)
+      {
+        int stable = 1;
+        if (trimmedCopy.startsWith(" *"))
+        {
+          stable = 1;
+          trimmedCopy.replace(" *", "");
+        }
+        else
+        {
+          stable = 0;
+        }
+
+        trimmedCopy.replace("g", "");
+        trimmedCopy.trim();
+        float tlsFloat = trimmedCopy.toFloat();
+        tlsFloat = tlsFloat / 37.7994;
+        String tlsString = String(tlsFloat, 3);
+        tlsString = tlsString + " t";
+        tlsString = padLeft(tlsString, ' ', 16);
+        if (stable)
+        {
+          tlsString[1] = '*';
+          Serial.println(tlsString);
+        }
+        trimmed = tlsString;
+      }
     }
+    else
+    {
+      newData = false;
+      return;
+    }
+
     const char *data = trimmed.c_str();
     // uint8_t *data = (uint8_t *)trimmed.c_str();
     strcpy(myData.a, data);
