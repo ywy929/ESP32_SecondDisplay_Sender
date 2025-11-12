@@ -1,4 +1,4 @@
-# Weight Balance LCD Sender
+# Second Display LCD Sender
 
 ESP32-based wireless data transmitter for weight scales. This project reads weight data from weight scales via RS-232 serial communication and transmits it wirelessly to a receiver ESP32 using the ESP-NOW protocol.
 
